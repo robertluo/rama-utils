@@ -2,7 +2,7 @@
   "UltraLogLog sketching with serialization.
    UltraLogLog is a data structure for estimating the number of distinct elements in a stream."
   (:import
-   [com.dynatrace.hash4j.hashing Hashing]
+   [com.dynatrace.hash4j.hashing Hashing Hasher64]
    [com.dynatrace.hash4j.distinctcount UltraLogLog]))
 
 ;## Utility functions
@@ -26,11 +26,16 @@
     [this s]
     "add a string to the counter."))
 
-(let [hashers {:komihash5-0 (Hashing/komihash5_0)}]
-  (defn kw->hasher
-    "convert a keyword `kw` to a hasher instance."
-    ^Hashing [kw]
-    (or (hashers kw) (Hashing/komihash5_0))))
+(def ^:private support-hashers
+  {:komihash5-0 (Hashing/komihash5_0)
+   :komihash4-3 (Hashing/komihash4_3)
+   :murmur3-128 (Hashing/murmur3_128)})
+
+(defn kw->hasher
+  "convert a keyword `kw` to a hasher instance."
+  ^Hasher64 [kw]
+  (get support-hashers kw 
+       (ex-info (str "Unknown hasher: " kw) {:kw kw})))
 
 ;## Implementation
 (defrecord UltraLogLogWrapper [bytes hasher-name]
@@ -48,7 +53,8 @@
 (defn create-ull 
   "Create an UltraLogLog EstimatedCounter instance with the given `precision` and optional `hasher-name`.
     - `precision` is the number of bits used to estimate the number of distinct elements.
-    - `hasher-name` is the name of the hasher to use, default to `:komihash5-0`"
+    - `hasher-name` is the name of the hasher to use, default to `:komihash5-0`, avaiable hashers are
+      `[:komihash5-0 :komihash4-3 :murmur3-128"
   ([precision]
    (create-ull precision :komihash5-0))
   ([precision hasher-name]
@@ -67,4 +73,8 @@
           ois (java.io.ObjectInputStream. bis)]
       (-> ois .readObject estimate-count))) ;=>
   2
+  ;test different hashers
+  (for [hasher-name (keys support-hashers)]
+    (-> (create-ull 16 hasher-name) (add-string "foo") (add-string "bar") estimate-count)) ;=>>
+  (fn [v] (every? #(= 2 %) v))
   )
