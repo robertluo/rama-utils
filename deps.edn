@@ -1,0 +1,2 @@
+{:deps
+ {com.dynatrace.hash4j/hash4j {:mvn/version "0.17.0"}}}

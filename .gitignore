@@ -1,0 +1,5 @@
+.nrepl*
+.clj-kondo/*/
+.cpcache/
+.lsp/
+.calva/
