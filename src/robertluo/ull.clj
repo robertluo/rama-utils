@@ -1,4 +1,4 @@
-(ns ull
+(ns robertluo.ull
   "UltraLogLog sketching with serialization.
    UltraLogLog is a data structure for estimating the number of distinct elements in a stream."
   (:require
@@ -60,9 +60,10 @@
     (-> (create-ull 16 hasher)
         (add-string "foo")
         (add-string "bar")
+        (add-string "baz")
         (add-string "foo")
         (estimate-count))) ;=>>
-  #(every? (fn [x] (= 2 x)) %)
+  #(every? (fn [x] (= 3 x)) %)
   )
 
 ;;## Nippy de/serialization
@@ -91,8 +92,10 @@
 ^:rct/test
 (comment
   (-> (create-ull) (nippy/freeze) alength) ;=> 294
-  (-> (create-ull) 
-      (nippy/freeze)
-      (nippy/thaw)
-      (estimate-count)) ;=> 0
+  (for [hasher (keys supported-hashers)]
+    (-> (create-ull 16 hasher)
+        (nippy/freeze)
+        (nippy/thaw)
+        (estimate-count))) ;=>>
+  #(every? (fn [x] (zero? x)) %)
   )
