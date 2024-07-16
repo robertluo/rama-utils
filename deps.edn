@@ -1,9 +1,10 @@
 {:deps    {com.dynatrace.hash4j/hash4j {:mvn/version "0.17.0"}
-           com.taoensso/nippy          {:mvn/version "3.4.2"
+           com.rpl/rama                {:mvn/version "0.16.1"
                                         :scope       "provided"}} 
  ;;`:dev` alias should be used while developing the library
  ;;`:test` alias for testing under commandline, have to use with `:dev` alias, e.g. `clj -X:dev:test`
- :aliases {:dev {:extra-deps {io.github.robertluo/rich-comment-tests #:git{:tag "v1.1.1"
-                                                                           :sha "3f65ecb"}}}
-           :test {:exec-fn    com.mjdowney.rich-comment-tests.test-runner/run-tests-in-file-tree!
-                  :exec-args  {:dirs #{"src"}}}}}
+ :aliases {:dev  {:extra-deps {io.github.robertluo/rich-comment-tests #:git{:tag "v1.1.1"
+                                                                            :sha "3f65ecb"}}}
+           :test {:exec-fn   com.mjdowney.rich-comment-tests.test-runner/run-tests-in-file-tree!
+                  :exec-args {:dirs #{"src"}}}}
+ :mvn/repos {"nexus-releases" {:url "https://nexus.redplanetlabs.com/repository/maven-public-releases"}}}

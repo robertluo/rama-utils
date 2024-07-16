@@ -14,7 +14,10 @@
     "Estimate the number of distinct elements.")
   (add-string
     [this s]
-    "add a string to the counter."))
+    "add a string to the counter.")
+  (union
+    [this other]
+    "union `this` with `other`, returns a new counter."))
 
 (def ^:private supported-hashers
   "All supported hasher for UltraLogLog, has to be hash64 compatible."
@@ -32,13 +35,18 @@
 (deftype UltraLogLogWrapper [^UltraLogLog ull hasher-name]
   EstimatedCounter
   (estimate-count
-   [_]
-   (-> ull .getDistinctCountEstimate Math/round))
+    [_]
+    (-> ull .getDistinctCountEstimate Math/round))
   (add-string
-   [_ x]
-   (let [^Hasher64 hasher (kw->hasher hasher-name)
-         ull (.add ull (.hashCharsToLong hasher x))]
-     (UltraLogLogWrapper. ull hasher-name))))
+    [_ x]
+    (let [^Hasher64 hasher (kw->hasher hasher-name)
+          ull (.add ull (.hashCharsToLong hasher x))]
+      (UltraLogLogWrapper. ull hasher-name)))
+  (union
+    [_ other] 
+    (-> ull
+        (UltraLogLog/merge (.ull ^UltraLogLogWrapper other))
+        (UltraLogLogWrapper. hasher-name))))
 
 (defn create-ull 
   "Create an UltraLogLog EstimatedCounter instance with the given `precision` and optional `hasher-name`.
@@ -54,16 +62,21 @@
        UltraLogLog/create
        (UltraLogLogWrapper. hasher-name))))
 
+(defn words-counter
+  "returns a counter with the given `words` added for `ull`."
+  [counter & words]
+  (reduce add-string counter words))
+
 ^:rct/test
 (comment 
   (for [hasher (keys supported-hashers)]
-    (-> (create-ull 16 hasher)
-        (add-string "foo")
-        (add-string "bar")
-        (add-string "baz")
-        (add-string "foo")
+    (-> (words-counter (create-ull 16 hasher) "foo" "bar" "baz" "foo") 
         (estimate-count))) ;=>>
   #(every? (fn [x] (= 3 x)) %)
+  
+  (-> (-> (create-ull) (words-counter "foo" "bar" "baz" "foo"))
+      (union (-> (create-ull) (words-counter "secret" "baz")))
+      (estimate-count)) ;=> 4 
   )
 
 ;;## Nippy de/serialization
