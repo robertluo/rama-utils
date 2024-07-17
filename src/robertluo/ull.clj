@@ -112,3 +112,8 @@
         (estimate-count))) ;=>>
   #(every? (fn [x] (zero? x)) %)
   )
+
+;;## Pretty print
+(defmethod print-method UltraLogLogWrapper
+  [^UltraLogLogWrapper x ^java.io.Writer wtr]
+  (.write wtr (format "#ull{:hasher %s :estimate-count %d}" (.hasher-name x) (estimate-count x))))
