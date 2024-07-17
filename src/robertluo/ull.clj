@@ -43,10 +43,12 @@
           ull (.add ull (.hashCharsToLong hasher x))]
       (UltraLogLogWrapper. ull hasher-name)))
   (union
-    [_ other] 
-    (-> ull
-        (UltraLogLog/merge (.ull ^UltraLogLogWrapper other))
-        (UltraLogLogWrapper. hasher-name))))
+    [this other]
+    (if (nil? other)
+      this
+      (-> ull
+          (UltraLogLog/merge (.ull ^UltraLogLogWrapper other))
+          (UltraLogLogWrapper. hasher-name)))))
 
 (defn create-ull 
   "Create an UltraLogLog EstimatedCounter instance with the given `precision` and optional `hasher-name`.
@@ -69,14 +71,19 @@
 
 ^:rct/test
 (comment 
+  ;;general test
   (for [hasher (keys supported-hashers)]
     (-> (words-counter (create-ull 16 hasher) "foo" "bar" "baz" "foo") 
         (estimate-count))) ;=>>
   #(every? (fn [x] (= 3 x)) %)
-  
+
+  ;;union test  
   (-> (-> (create-ull) (words-counter "foo" "bar" "baz" "foo"))
       (union (-> (create-ull) (words-counter "secret" "baz")))
-      (estimate-count)) ;=> 4 
+      (estimate-count)) ;=> 4
+  (-> (-> (create-ull) (words-counter "foo"))
+      (union nil)
+      (estimate-count)) ;=> 1
   )
 
 ;;## Nippy de/serialization
