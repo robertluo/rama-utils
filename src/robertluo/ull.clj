@@ -124,3 +124,9 @@
 (defmethod print-method UltraLogLogWrapper
   [^UltraLogLogWrapper x ^java.io.Writer wtr]
   (.write wtr (format "#ull{:hasher %s :estimate-count %d}" (.hasher-name x) (estimate-count x))))
+
+;;## Implementation for nil type
+(extend-protocol EstimatedCounter
+  nil
+  (estimate-count [_] 0)
+  (union [_ other] other))
